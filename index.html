@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Baire - Tienda Online</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="pb-20">
+    <!-- Floating Cart Button -->
+    <button id="floatingCartBtn" class="fixed bottom-24 right-5 z-50 bg-indigo-600 text-white w-14 h-14 rounded-full flex items-center justify-center floating-cart">
+        <i class="fas fa-shopping-cart text-xl"></i>
+        <span id="cartBadge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center notification-badge hidden">0</span>
+    </button>
+
+    <!-- Header -->
+    <header class="gradient-header text-white shadow-lg">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <!-- Carrito animado rodando -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" class="w-10 h-10">
+                        <!-- Carrito base -->
+                        <path d="M10 10 H50 L45 40 H15 Z" fill="none" stroke="white" stroke-width="4"></path>
+                        
+                        <!-- Ruedas -->
+                        <circle cx="22" cy="46" r="4" fill="white">
+                            <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 22 46" to="360 22 46" dur="1s" repeatCount="indefinite"></animateTransform>
+                        </circle>
+                        <circle cx="42" cy="46" r="4" fill="white">
+                            <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 42 46" to="360 42 46" dur="1s" repeatCount="indefinite"></animateTransform>
+                        </circle>
+                        
+                        <!-- Movimiento horizontal del carrito -->
+                        <animateTransform attributeName="transform" attributeType="XML" type="translate" values="0;3;0" dur="1s" repeatCount="indefinite"></animateTransform>
+                    </svg>
+            
+                    <h1 class="text-xl font-bold">Stock Baire</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <!-- Selector de Moneda Mejorado -->
+                    <div class="relative">
+                        <div id="currencySelector" class="currency-selector flex items-center">
+                            <i class="fas fa-dollar-sign text-xs"></i>
+                            <span id="currentCurrency">USD</span>
+                            <i class="fas fa-chevron-down ml-1 text-xs"></i>
+                        </div>
+                        <div id="currencyOptions" class="currency-options">
+                            <div class="currency-option active" data-currency="USD">
+                                <i class="fas fa-dollar-sign currency-icon"></i>
+                                <div class="currency-details">
+                                    <span>USD Cash</span>
+                                    <span class="currency-badge">1:1.00</span>
+                                </div>
+                            </div>
+                            <div class="currency-option" data-currency="USDT">
+                                <i class="fas fa-dollar-sign currency-icon"></i>
+                                <div class="currency-details">
+                                    <span>USDT Criptos</span>
+                                    <span class="currency-badge">1:0.99</span>
+                                </div>
+                            </div>
+                            <div class="currency-option" data-currency="CUP">
+                                <i class="fas fa-peso-sign currency-icon"></i>
+                                <div class="currency-details">
+                                    <span>CUP Efectivo</span>
+                                    <span class="currency-badge">1:400</span>
+                                </div>
+                            </div>
+                            <div class="currency-option" data-currency="CUPT">
+                                <i class="fas fa-money-check-alt currency-icon"></i>
+                                <div class="currency-details">
+                                    <span>CUP Transferencia</span>
+                                    <span class="currency-badge">1:440</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            
+                    <button class="p-2 text-white">
+               <a href="go:Admin">
+  <i class="fas fa-user"></i>
+</a>
+
+                    </button>
+                </div>
+            </div>
+    
+            <!-- Search Bar -->
+            <div class="mt-4 relative">
+                <div class="search-bar bg-white rounded-full flex items-center px-4 py-2">
+                    <input type="text" id="searchInput" placeholder="Buscar productos..." class="w-full outline-none text-gray-700">
+                    <button id="searchButton" class="text-indigo-600"><i class="fas fa-search"></i></button>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Categories Navigation -->
+        <div class="overflow-x-auto whitespace-nowrap py-2 scrollbar-hide">
+            <div class="inline-flex space-x-8 px-4">
+                <button onclick="filterProducts('all')" class="category-item filter-active inline-block px-2 py-2 active text-indigo-300">Todos</button>
+                <button onclick="filterProducts('phones')" class="category-item inline-block px-2 py-2">Teléfonos</button>
+                <button onclick="filterProducts('laptops')" class="category-item inline-block px-2 py-2">Laptops</button>
+                <button onclick="filterProducts('watches')" class="category-item inline-block px-2 py-2">Smartwatches</button>
+                <button onclick="filterProducts('home')" class="category-item inline-block px-2 py-2">Hogar</button>
+                <button onclick="filterProducts('electronics')" class="category-item inline-block px-2 py-2">Electrónica</button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Banner promocional mejorado -->
+    <div class="promo-banner text-white mx-4 my-4 rounded-lg">
+        <div class="promo-main-row">
+            <div class="promo-main-content" aria-label="Título del banner">
+                <i class="fas fa-gift gift-icon" aria-hidden="true"></i>
+                <span class="promo-main-text">Recarga Internacional</span>
+            </div>
+            <button class="view-more" aria-label="Ver más detalles del banner">Ver más</button>
+        </div>
+        <div class="promo-secondary-container" aria-live="polite" aria-atomic="true">
+            <span class="sliding-text active">Válido hasta 30/8/2025</span>
+            <span class="sliding-text">Por 27 usd recibes Internet de 12 a 7 y 300 saldo</span>
+            <span class="sliding-text">Disponible en Baire</span>
+        </div>
+    </div>
+
+    <!-- Carousel -->
+    <div class="relative mx-4 mb-6 h-48 rounded-xl overflow-hidden">
+        <div class="flex carousel-slide">
+            <div class="min-w-full">
+                <img src="https://i.postimg.cc/0Qt8zV3R/IMG-20250828-WA0010.jpg" alt="Promoción 1" class="w-full h-48 object-cover">
+            </div>
+            <div class="min-w-full">
+                <img src="https://i.postimg.cc/tJFsLq9B/Grid-Art-20240826-185851668.jpg" alt="Promoción 2" class="w-full h-48 object-cover">
+            </div>
+            <div class="min-w-full">
+                <img src="https://i.postimg.cc/J4xxxyz0/9e3e37b0-986d-4546-a7e0-e96dddf739e4-CR0-0-970-600-PT0-SX970-V1.jpg" alt="Promoción 3" class="w-full h-48 object-cover">
+            </div>
+        </div>
+        <button id="prevBtn" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+        <button id="nextBtn" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-80 text-indigo-600 w-8 h-8 rounded-full flex items-center justify-center hover:bg-opacity-100 transition-all">
+            <i class="fas fa-chevron-right"></i>
+        </button>
+        <div class="absolute bottom-2 left-0 right-0 flex justify-center space-x-1">
+            <div class="w-2 h-2 bg-white rounded-full indicator active"></div>
+            <div class="w-2 h-2 bg-white bg-opacity-50 rounded-full indicator"></div>
+            <div class="w-2 h-2 bg-white bg-opacity-50 rounded-full indicator"></div>
+        </div>
+    </div>
+
+    <!-- Products Grid -->
+    <div class="container mx-auto px-4">
+        <h2 id="currentCategory" class="text-xl font-bold mb-4">Todos los Productos</h2>
+        <div id="productsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <!-- Los productos se cargarán dinámicamente desde Supabase -->
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Daily Deals Section -->
+    <div class="container mx-auto px-4 mt-8">
+        <h2 class="text-xl font-bold mb-4 flex items-center">
+            <i class="fas fa-bolt text-yellow-500 mr-2"></i> Ofertas del Día
+        </h2>
+        <div id="dailyDealsContainer" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <!-- Las ofertas se cargarán dinámicamente desde Supabase -->
+        </div>
+    </div>
+
+    <!-- WhatsApp Banner -->
+    <div class="bg-gradient-to-r from-green-500 to-green-600 text-white mx-4 my-6 rounded-lg p-4 flex items-center justify-between">
+        <div class="flex items-center">
+            <i class="fab fa-whatsapp text-3xl mr-2"></i>
+            <div>
+                <h3 class="font-bold">¿Quieres vender?</h3>
+                <p class="text-sm">Chatea con nosotros en WhatsApp</p>
+            </div>
+        </div>
+        <a href="https://wa.me/5353040553" class="bg-white text-green-600 px-4 py-2 rounded-lg font-semibold text-sm flex items-center hover:bg-gray-100 transition-colors">
+            <i class="fab fa-whatsapp mr-2"></i> Chatear
+        </a>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav fixed bottom-0 left-0 right-0 z-40">
+        <div class="flex justify-around items-center py-2">
+            <a href="go:Home" class="nav-item flex flex-col items-center text-indigo-600">
+                <i class="fas fa-home text-xl"></i>
+                <span class="text-xs mt-1">Home</span>
+            </a>
+            <a href="#" class="nav-item flex flex-col items-center text-gray-500">
+                <i class="fab fa-google-play text-xl"></i>
+                <span class="text-xs mt-1">App</span>
+            </a>
+            <a href="https://chat.whatsapp.com/FN3KYUPy6eZ4wH8SSe13wK?mode=ems_copy_c" class="nav-item flex flex-col items-center text-gray-500">
+                <i class="fas fa-users text-xl"></i>
+                <span class="text-xs mt-1">Group</span>
+            </a>
+            <a href="https://wa.me/5353040553" class="nav-item flex flex-col items-center text-gray-500">
+                <i class="fab fa-whatsapp text-xl"></i>
+                <span class="text-xs mt-1">Whatsapp</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Shopping Cart Modal -->
+    <div id="cartModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute w-full h-full"></div>
+        <div class="absolute bottom-0 w-full bg-white rounded-t-xl shadow-xl max-h-[80vh] overflow-y-auto">
+            <div class="p-4 border-b sticky top-0 bg-white z-10 flex justify-between items-center">
+                <h3 class="font-bold text-lg" id="cartTitle">Carrito de Compras (0)</h3>
+                <button id="closeCartModal" class="text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-4 space-y-4" id="cartItemsContainer">
+                <!-- Cart items will be dynamically inserted here -->
+                <div class="text-center py-10">
+                    <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">Tu carrito está vacío</p>
+                </div>
+            </div>
+            
+            <div class="p-4 bg-gray-50" id="cartSummary">
+                <div class="flex justify-between mb-2">
+                    <span class="font-medium">Subtotal</span>
+                    <span class="price-tag" id="subtotal">$0</span>
+                </div>
+                <div class="flex justify-between mb-4">
+                    <span class="font-medium">Envío</span>
+                    <span id="shipping">$0</span>
+                </div>
+                <div class="flex justify-between border-t border-gray-200 pt-3 mb-4">
+                    <span class="font-bold">Total</span>
+                    <span class="price-tag font-bold" id="total">$0</span>
+                </div>
+                
+                <div class="space-y-2">
+                    <button id="checkoutBtn" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium">
+                        Procesar Compra
+                    </button>
+                    <a href="https://wa.me/5353040553" class="block w-full border border-indigo-600 text-indigo-600 py-3 rounded-lg font-medium text-center">
+                        <i class="fab fa-whatsapp mr-2"></i> Preguntar por WhatsApp
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Details Modal -->
+    <div id="productModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute w-full h-full"></div>
+        <div class="absolute bottom-0 w-full bg-white rounded-t-xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b sticky top-0 bg-white z-10 flex justify-between items-center">
+                <button id="closeProductModal" class="text-gray-500">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+            </div>
+            
+            <div class="p-4">
+                <!-- Galería de imágenes -->
+                <div class="flex justify-center mb-4">
+                    <img id="productModalImage" class="image-gallery-main" src="" alt="Product Image">
+                </div>
+                <div id="productImageGallery" class="image-gallery hidden"></div>
+                
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="font-bold text-lg" id="productModalName">Nombre del Producto</h3>
+                        <div class="flex items-center">
+                            <div class="flex text-yellow-400 text-xs mt-1">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star-half-alt"></i>
+                            </div>
+                            <span class="text-xs text-gray-500 ml-1 mt-1">(128)</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="price-tag font-bold text-xl" id="productModalPrice">$0</div>
+                        <div class="text-xs text-gray-500 line-through" id="productModalOldPrice">$0</div>
+                    </div>
+                </div>
+                
+                <div class="mt-6">
+                    <h4 class="font-semibold mb-2">Descripción</h4>
+                    <p class="text-gray-600 text-sm" id="productModalDescription">Descripción detallada del producto.</p>
+                </div>
+                
+                <div class="mt-8 grid grid-cols-2 gap-4">
+                    <button class="border border-indigo-600 text-indigo-600 py-3 rounded-lg font-medium flex items-center justify-center">
+                        <i class="far fa-heart mr-2"></i> Guardar
+                    </button>
+                    <button class="bg-indigo-600 text-white py-3 rounded-lg font-medium" id="addToCartFromModal">
+                        Añadir al carrito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checkout Form Modal -->
+    <div id="checkoutModal" class="fixed inset-0 z-50 hidden">
+        <div class="modal-overlay absolute w-full h-full"></div>
+        <div class="absolute bottom-0 w-full bg-white rounded-t-xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div class="p-4 border-b sticky top-0 bg-white z-10 flex justify-between items-center">
+                <h3 class="font-bold text-lg">Completar Compra</h3>
+                <button id="closeCheckoutModal" class="text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="p-4">
+                <form id="checkoutForm">
+                    <div class="mb-4">
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Nombre Completo</label>
+                        <input type="text" id="name" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <input type="tel" id="phone" name="phone" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="deliveryLocation" class="block text-sm font-medium text-gray-700 mb-1">Lugar de Entrega</label>
+                        <select id="deliveryLocation" name="deliveryLocation" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                            <option value="" disabled selected>Seleccione un lugar</option>
+                            <option value="Recoger en local">Recoger en local</option>
+                            <option value="Baire">Baire</option>
+                            <option value="Contramaestre">Contramaestre</option>
+                            <option value="Jiguaní">Jiguaní</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                        <textarea id="address" name="address" rows="2" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label for="reference" class="block text-sm font-medium text-gray-700 mb-1">Punto de Referencia</label>
+                        <input type="text" id="reference" name="reference" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Cerca del parque, casa verde, etc.">
+                    </div>
+
+                    <!-- NUEVO CAMPO: Detalles específicos del producto -->
+                    <div class="mb-4">
+                        <label for="productDetails" class="block text-sm font-medium text-gray-700 mb-1">Detalles específicos del producto</label>
+                        <textarea id="productDetails" name="productDetails" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ej: Del pedido zapatos verdes, quiero la talla 37. Especifica detalles como color, talla, modelo, etc."></textarea>
+                    </div>
+                    
+                    <div class="mt-6">
+                        <h4 class="font-semibold mb-2">Resumen del Pedido</h4>
+                        <div id="orderSummary" class="border rounded-lg p-3 bg-gray-50 mb-4">
+                            <!-- Order items will be inserted here -->
+                        </div>
+                        
+                        <div class="flex justify-between border-t border-gray-200 pt-3 mb-4">
+                            <span class="font-bold">Total</span>
+                            <span class="price-tag font-bold" id="checkoutTotalPrice">$0</span>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium mt-4">
+                        <i class="fab fa-whatsapp mr-2"></i> Enviar Pedido por WhatsApp
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="scripts.js"></script>
+</body>
+</html>
